@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -91,14 +91,6 @@
   .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
-
-<!--[if gte mso 9]><xml>
-<mso:CustomDocumentProperties>
-<mso:_dlc_DocId msdt:dt="string">FQ3WTNCCU53N-1221634444-106893</mso:_dlc_DocId>
-<mso:_dlc_DocIdItemGuid msdt:dt="string">c4fb30f1-29e2-48eb-b03d-7e92ab45cad3</mso:_dlc_DocIdItemGuid>
-<mso:_dlc_DocIdUrl msdt:dt="string">https://kerstenfrance096.sharepoint.com/sites/Partage/_layouts/15/DocIdRedir.aspx?ID=FQ3WTNCCU53N-1221634444-106893, FQ3WTNCCU53N-1221634444-106893</mso:_dlc_DocIdUrl>
-</mso:CustomDocumentProperties>
-</xml><![endif]-->
 </head>
 <body>
 
@@ -462,7 +454,7 @@ async function graphPatch(path, data) {
 async function uploadPhoto(file) {
   const folder = getPhotoFolder();
   const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  const fileName = `facture_${ts}.jpg`;
+  const d = new Date(); const jour = String(d.getDate()).padStart(2,"0"); const mois = String(d.getMonth()+1).padStart(2,"0"); const annee = d.getFullYear(); const fileName = `${jour} ${mois} ${annee} ${cat}.jpg`;
   const encodedPath = encodeURIComponent(`${folder}/${fileName}`).replace(/%2F/g,'/');
   const result = await graphPut(`/me/drive/root:/${encodedPath}:/content`, file, file.type||'image/jpeg');
   return { fileName, webUrl: result.webUrl, itemId: result.id };
