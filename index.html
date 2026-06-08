@@ -482,21 +482,43 @@ async function getExcelDriveItemId(){
 }
 
 // =============================================
-// ÉCRITURE EXCEL SHAREPOINT
+// ÉCRITURE EXCEL SHAREPOINT via sessions
 // =============================================
 async function writeToExcel(cat,ttc,tva,ht){
   if(!siteId) throw new Error('Site non initialisé');
   dbg('📊 Accès Excel via ID direct...');
 
-  // Utiliser l'ID de document SharePoint directement
   const fileId = await getExcelDriveItemId();
   dbg('✓ Excel Drive Item ID: '+fileId);
 
   const sheetName=getMonthTab();
   dbg('📋 Onglet: '+sheetName);
 
+  // Créer une session Excel (nécessaire pour SharePoint)
+  dbg('🔑 Création session Excel...');
+  let sessionId = null;
+  try {
+    const sessionResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/createSession`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persistChanges: true })
+    });
+    if (sessionResp.ok) {
+      const sessionData = await sessionResp.json();
+      sessionId = sessionData.id;
+      dbg('✓ Session: '+sessionId.substring(0,20)+'...');
+    } else {
+      dbg('⚠ Session failed, essai sans session...');
+    }
+  } catch(e) { dbg('⚠ Session error: '+e.message); }
+
+  const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' };
+  if (sessionId) headers['workbook-session-id'] = sessionId;
+
   // Trouver première ligne vide à partir de C15
-  const range=await graphGet(`/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='C15:C60')`);
+  const rangeResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='C15:C60')`, { headers });
+  if (!rangeResp.ok) { const t=await rangeResp.text(); throw new Error(`Range ${rangeResp.status}: ${t}`); }
+  const range = await rangeResp.json();
   const vals=range.values||[];
   let firstEmpty=15;
   for(let i=0;i<vals.length;i++){
@@ -505,7 +527,6 @@ async function writeToExcel(cat,ttc,tva,ht){
   dbg(`📝 Première ligne vide: ${firstEmpty}`);
 
   // Construire la ligne (C à O = 13 colonnes)
-  // C=date(vide), D=desc(vide), E=hôtel, F=carbHT, G=carbTVA, H=carbTTC, I=repasHT, J=repasTVA, K=repasTTC, L=diversHT, M=diversTVA, N=diversTTC, O=total
   const row=new Array(13).fill(null);
   if(cat==='hotel'){row[2]=ttc;row[12]=ttc;}
   else if(cat==='carburant'){row[3]=ht;row[4]=tva;row[5]=ttc;row[12]=ttc;}
@@ -514,7 +535,24 @@ async function writeToExcel(cat,ttc,tva,ht){
 
   const addr=`C${firstEmpty}:O${firstEmpty}`;
   dbg(`✏️ Écriture en ${addr}`);
-  await graphPatch(`/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='${addr}')`,{values:[row]});
+
+  const patchResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='${addr}')`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({values:[row]})
+  });
+  if (!patchResp.ok) { const t=await patchResp.text(); throw new Error(`Patch ${patchResp.status}: ${t}`); }
+
+  // Fermer la session
+  if (sessionId) {
+    try {
+      await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/closeSession`, {
+        method: 'POST', headers
+      });
+      dbg('✓ Session fermée');
+    } catch(e) {}
+  }
+
   dbg('✓ Excel mis à jour !');
   return firstEmpty;
 }
