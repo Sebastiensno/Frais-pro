@@ -243,6 +243,7 @@ const CLIENT_ID = '837520de-a802-4aae-8036-444247f65b0d';
 const TENANT_ID = '530f0c5e-e16c-44d7-9105-cabdc6dec1fa';
 const REDIRECT_URI = 'https://sebastiensno.github.io/Frais-pro/';
 const SCOPES = 'Files.ReadWrite Files.ReadWrite.All Sites.ReadWrite.All Sites.Manage.All User.Read offline_access';
+const POWER_AUTOMATE_URL = ''; // À remplir après création du flow
 const AUTHORITY = `https://login.microsoftonline.com/${TENANT_ID}`;
 
 // SharePoint
@@ -494,7 +495,7 @@ async function writeToExcel(cat,ttc,tva,ht){
   const sheetName=getMonthTab();
   dbg('📋 Onglet: '+sheetName);
 
-  // Créer une session Excel (nécessaire pour SharePoint)
+  // Créer une session Excel
   dbg('🔑 Création session Excel...');
   let sessionId = null;
   try {
@@ -508,7 +509,21 @@ async function writeToExcel(cat,ttc,tva,ht){
       sessionId = sessionData.id;
       dbg('✓ Session: '+sessionId.substring(0,20)+'...');
     } else {
-      dbg('⚠ Session failed, essai sans session...');
+      const errText = await sessionResp.text();
+      dbg('⚠ Session failed ('+sessionResp.status+'): essai beta...');
+      // Essayer avec l'endpoint beta
+      const sessionResp2 = await fetch(`https://graph.microsoft.com/beta/drives/${driveId}/items/${fileId}/workbook/createSession`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ persistChanges: true })
+      });
+      if (sessionResp2.ok) {
+        const sessionData2 = await sessionResp2.json();
+        sessionId = sessionData2.id;
+        dbg('✓ Session beta: '+sessionId.substring(0,20)+'...');
+      } else {
+        dbg('⚠ Session beta failed aussi');
+      }
     }
   } catch(e) { dbg('⚠ Session error: '+e.message); }
 
@@ -516,7 +531,8 @@ async function writeToExcel(cat,ttc,tva,ht){
   if (sessionId) headers['workbook-session-id'] = sessionId;
 
   // Trouver première ligne vide à partir de C15
-  const rangeResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='C15:C60')`, { headers });
+  const apiVer = sessionId ? 'v1.0' : 'beta';
+  const rangeResp = await fetch(`https://graph.microsoft.com/${apiVer}/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='C15:C60')`, { headers });
   if (!rangeResp.ok) { const t=await rangeResp.text(); throw new Error(`Range ${rangeResp.status}: ${t}`); }
   const range = await rangeResp.json();
   const vals=range.values||[];
@@ -536,7 +552,7 @@ async function writeToExcel(cat,ttc,tva,ht){
   const addr=`C${firstEmpty}:O${firstEmpty}`;
   dbg(`✏️ Écriture en ${addr}`);
 
-  const patchResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='${addr}')`, {
+  const patchResp = await fetch(`https://graph.microsoft.com/${apiVer}/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='${addr}')`, {
     method: 'PATCH',
     headers,
     body: JSON.stringify({values:[row]})
@@ -546,7 +562,7 @@ async function writeToExcel(cat,ttc,tva,ht){
   // Fermer la session
   if (sessionId) {
     try {
-      await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/closeSession`, {
+      await fetch(`https://graph.microsoft.com/${apiVer}/drives/${driveId}/items/${fileId}/workbook/closeSession`, {
         method: 'POST', headers
       });
       dbg('✓ Session fermée');
