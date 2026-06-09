@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Frais Pro — KERSTEN FRANCE</title>
+<style>
+  :root {
+    --blue:#0078D4;--blue-light:#E6F1FB;--green:#107C10;--green-light:#DFF6DD;
+    --red:#D83B01;--red-light:#FDE7E9;--orange:#FF8C00;--orange-light:#FFF4CE;
+    --gray:#605E5C;--gray-light:#F3F2F1;--border:#EDEBE9;--text:#201F1E;--text-muted:#605E5C;
+    --radius:8px;--radius-lg:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#F3F2F1;color:var(--text);min-height:100vh;}
+  .app-header{background:var(--blue);color:white;padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .app-header h1{font-size:18px;font-weight:600;}
+  .nav-bar{display:flex;background:white;border-bottom:1px solid var(--border);position:sticky;top:54px;z-index:99;}
+  .nav-btn{flex:1;padding:10px 4px 8px;background:none;border:none;border-bottom:3px solid transparent;font-size:11px;color:var(--text-muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;}
+  .nav-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+  .screen{display:none;padding:16px;}.screen.active{display:block;}
+  .card{background:white;border-radius:var(--radius-lg);border:1px solid var(--border);padding:16px;margin-bottom:12px;}
+  .card-title{font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:32px 16px;text-align:center;cursor:pointer;background:white;}
+  .upload-zone svg{width:48px;height:48px;stroke:var(--blue);fill:none;stroke-width:1.5;margin:0 auto 12px;display:block;}
+  .upload-zone p{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+  .upload-zone span{font-size:13px;color:var(--text-muted);}
+  #fileInput{display:none;}
+  .preview-img{width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius);margin-bottom:12px;display:none;border:1px solid var(--border);}
+  .form-group{margin-bottom:12px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+  input[type=text],input[type=number],input[type=date],select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text);background:white;appearance:none;-webkit-appearance:none;font-family:inherit;}
+  input:focus,select:focus{outline:none;border-color:var(--blue);}
+  .ai-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:500;}
+  .ai-loading{background:var(--orange-light);color:var(--orange);}
+  .ai-done{background:var(--green-light);color:var(--green);}
+  .ai-error{background:var(--red-light);color:var(--red);}
+  .btn-primary{width:100%;padding:13px;background:var(--blue);color:white;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-secondary{width:100%;padding:11px;background:white;color:var(--blue);border:1.5px solid var(--blue);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+  .sync-step{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .sync-step:last-child{border-bottom:none;}
+  .step-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;margin-top:1px;}
+  .step-todo{background:var(--gray-light);color:var(--gray);}
+  .step-active{background:var(--orange-light);color:var(--orange);}
+  .step-done{background:var(--green-light);color:var(--green);}
+  .step-err{background:var(--red-light);color:var(--red);}
+  .step-text p{font-size:13px;font-weight:600;}
+  .step-text span{font-size:12px;color:var(--text-muted);}
+  .expense-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .expense-item:last-child{border-bottom:none;}
+  .exp-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--gray-light);}
+  .exp-info{flex:1;min-width:0;}
+  .exp-info p{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .exp-info span{font-size:12px;color:var(--text-muted);}
+  .exp-right{text-align:right;flex-shrink:0;}
+  .exp-amount{font-size:15px;font-weight:700;}
+  .exp-status{font-size:11px;padding:2px 8px;border-radius:10px;margin-top:2px;display:inline-block;}
+  .status-ok{background:var(--green-light);color:var(--green);}
+  .status-error{background:var(--red-light);color:var(--red);}
+  .status-pending{background:var(--orange-light);color:var(--orange);}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .stat-card{background:white;border-radius:var(--radius-lg);border:1px solid var(--border);padding:14px;}
+  .stat-card .lbl{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
+  .stat-card .val{font-size:24px;font-weight:700;margin-top:4px;}
+  .stat-card .sub{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .bar-row{margin-bottom:10px;}
+  .bar-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;}
+  .bar-track{height:8px;background:var(--gray-light);border-radius:4px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--blue);border-radius:4px;}
+  .login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:32px 24px;text-align:center;}
+  .login-logo{width:72px;height:72px;background:var(--blue);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+  .login-logo svg{width:40px;height:40px;fill:white;}
+  .ms-btn{display:flex;align-items:center;justify-content:center;gap:10px;background:#0078D4;color:white;border:none;border-radius:8px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;width:100%;max-width:320px;}
+  .note-info{background:var(--blue-light);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:#0C447C;margin-top:12px;line-height:1.6;}
+  .debug-box{background:#1e1e1e;color:#00ff00;font-family:monospace;font-size:11px;padding:10px;border-radius:var(--radius);margin-top:8px;max-height:300px;overflow-y:auto;display:none;}
+  #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#201F1E;color:white;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:999;max-width:90vw;text-align:center;}
+  #toast.show{opacity:1;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>💼 Frais Pro</h1>
+    <div style="font-size:11px;opacity:.8;">KERSTEN FRANCE — Sébastien ESNAULT</div>
+  </div>
+  <div id="headerRight">
+    <button style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:white;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;" onclick="startLogin()">Se connecter</button>
+  </div>
+</div>
+
+<div class="nav-bar" id="navBar" style="display:none;">
+  <button class="nav-btn active" onclick="showScreen('scan',this)">
+    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Scanner
+  </button>
+  <button class="nav-btn" onclick="showScreen('history',this)">
+    <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    Historique
+  </button>
+  <button class="nav-btn" onclick="showScreen('stats',this)">
+    <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+    Résumé
+  </button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-screen">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+    </div>
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:8px;">Frais Pro</h2>
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:28px;line-height:1.5;">Scannez vos factures et synchronisez avec SharePoint KERSTEN FRANCE.</p>
+    <button class="ms-btn" onclick="startLogin()">
+      <svg width="20" height="20" viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+      Se connecter avec Microsoft
+    </button>
+    <div class="note-info">
+      📁 Photos → <strong>NOTES DE FRAIS/photo ticket seb2026/SXX</strong><br>
+      📊 Excel → <strong>2026- Sébastien ESNAULT.xlsx</strong><br>
+      🏢 Site → <strong>kerstenfrance096.sharepoint.com</strong>
+    </div>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div class="screen" id="screen-scan">
+  <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleFile(event)">
+
+  <div id="uploadZone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <p>Photographier la facture</p>
+    <span>Appuyez pour ouvrir l'appareil photo</span>
+  </div>
+
+  <img id="previewImg" class="preview-img" alt="Aperçu facture">
+
+  <div id="extractForm" style="display:none;">
+
+    <div style="background:var(--blue-light);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:#0C447C;margin-bottom:12px;">
+      📁 <span id="weekFolder">...</span> &nbsp;|&nbsp; 📊 Onglet : <span id="monthTab">...</span>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card-title" style="margin:0;">Données extraites</div>
+        <div class="ai-badge ai-loading" id="aiBadge"><span class="spin"></span> Analyse...</div>
+      </div>
+
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="f-cat" onchange="updateCatInfo()">
+          <option value="carburant">⛽ Carburant / Gasoil / Essence</option>
+          <option value="repas">🍽️ Repas</option>
+          <option value="hotel">🏨 Hôtel</option>
+          <option value="divers">📎 Divers</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Montant TTC (€)</label>
+          <input type="number" id="f-ttc" placeholder="0.00" step="0.01" oninput="calcHT()">
+        </div>
+        <div class="form-group">
+          <label>TVA (€)</label>
+          <input type="number" id="f-tva" placeholder="0.00" step="0.01" oninput="calcHT()">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Montant HT (€)</label>
+        <input type="number" id="f-ht" placeholder="0.00" step="0.01" readonly style="background:var(--gray-light);">
+      </div>
+
+      <div style="background:var(--blue-light);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:#0C447C;" id="colInfo">
+        Colonnes Excel : F (HT) + G (TVA) + H (TTC)
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Synchronisation</div>
+      <div class="sync-step">
+        <div class="step-icon step-todo" id="dot1">1</div>
+        <div class="step-text"><p>Upload photo → SharePoint</p><span id="s1txt">...</span></div>
+      </div>
+      <div class="sync-step">
+        <div class="step-icon step-todo" id="dot2">2</div>
+        <div class="step-text"><p>Écriture dans Excel</p><span id="s2txt">...</span></div>
+      </div>
+      <div class="debug-box" id="debugBox"></div>
+      <button onclick="copyDebug()" style="margin-top:6px;width:100%;padding:8px;background:#1e1e1e;color:#00ff00;border:1px solid #00ff00;border-radius:var(--radius);font-size:12px;cursor:pointer;display:none;" id="copyDebugBtn">📋 Copier le log</button>
+    </div>
+
+    <button class="btn-primary" id="submitBtn" onclick="submitExpense()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg>
+      Enregistrer et synchroniser
+    </button>
+    <button class="btn-secondary" onclick="resetForm()">Annuler</button>
+  </div>
+</div>
+
+<!-- HISTORIQUE -->
+<div class="screen" id="screen-history">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <h3 style="font-size:15px;font-weight:700;">Mes notes de frais</h3>
+    <span style="font-size:13px;color:var(--text-muted);" id="histTotal">0 €</span>
+  </div>
+  <div class="card" id="expenseList"></div>
+  <button class="btn-secondary" onclick="openExcel()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+    Ouvrir le fichier Excel
+  </button>
+</div>
+
+<!-- STATS -->
+<div class="screen" id="screen-stats">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="lbl">Total mois</div><div class="val" id="st-total">0 €</div><div class="sub" id="st-month"></div></div>
+    <div class="stat-card"><div class="lbl">Factures</div><div class="val" id="st-count">0</div><div class="sub">scannées</div></div>
+    <div class="stat-card"><div class="lbl">Synchronisées</div><div class="val" id="st-synced">0</div><div class="sub">SharePoint ✓</div></div>
+    <div class="stat-card"><div class="lbl">En attente</div><div class="val" id="st-pending">0</div><div class="sub">à synchroniser</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Par catégorie</div>
+    <div id="catBars"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// =============================================
+// CONFIG
+// =============================================
+const CLIENT_ID = '837520de-a802-4aae-8036-444247f65b0d';
+const TENANT_ID = '530f0c5e-e16c-44d7-9105-cabdc6dec1fa';
+const REDIRECT_URI = 'https://sebastiensno.github.io/Frais-pro/';
+const SCOPES = 'Files.ReadWrite Files.ReadWrite.All Sites.ReadWrite.All Sites.Manage.All User.Read offline_access';
+const AUTHORITY = `https://login.microsoftonline.com/${TENANT_ID}`;
+
+// SharePoint
+const SP_HOSTNAME = 'kerstenfrance096.sharepoint.com';
+const SP_SITE_PATH = '/sites/Partage';
+const SP_DOC_PATH = 'Direction/Kersten-France-intranet/Kersten_Audrey fichiers partage 2020/NOTES DE FRAIS';
+const PHOTO_SUBFOLDER = 'photo ticket seb2026';
+const EXCEL_NAME = '2026- Sébastien ESNAULT.xlsx';
+const EXCEL_ITEM_ID = '1294F684-BEDF-454B-BDBF-62686DA71158';
+
+// Onglets mois
+const MONTH_TABS = {1:'Janv26',2:'Fev26',3:'Mars26',4:'Avril26',5:'Mai26',6:'Juin26',7:'Juillet26',8:'Aout26',9:'Sep26',10:'Oct26',11:'Nov26',12:'Dec26'};
+
+let accessToken = null;
+let currentUser = null;
+let siteId = null;
+let driveId = null;
+let expenses = JSON.parse(localStorage.getItem('fp_expenses')||'[]');
+let currentFile = null;
+
+// =============================================
+// HELPERS
+// =============================================
+function getWeekNumber() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w1 = new Date(d.getFullYear(),0,4);
+  return 'S'+(1+Math.round(((d-w1)/86400000-3+(w1.getDay()+6)%7)/7));
+}
+function getMonthTab(){ return MONTH_TABS[new Date().getMonth()+1]||'Juin26'; }
+function calcHT(){
+  const ttc=parseFloat(document.getElementById('f-ttc').value)||0;
+  const tva=parseFloat(document.getElementById('f-tva').value)||0;
+  document.getElementById('f-ht').value=(ttc-tva).toFixed(2);
+}
+function updateCatInfo(){
+  const labels={carburant:'F (HT) + G (TVA) + H (TTC)',repas:'I (HT) + J (TVA) + K (TTC)',hotel:'E (Hôtel TTC)',divers:'L (HT) + M (TVA) + N (TTC)'};
+  document.getElementById('colInfo').textContent='Colonnes Excel : '+labels[document.getElementById('f-cat').value];
+}
+function updateInfoDisplay(){
+  const week=getWeekNumber(), tab=getMonthTab();
+  const el1=document.getElementById('weekFolder'), el2=document.getElementById('monthTab');
+  const s1=document.getElementById('s1txt'), s2=document.getElementById('s2txt');
+  if(el1) el1.textContent=`photo ticket seb2026/${week}`;
+  if(el2) el2.textContent=tab;
+  if(s1) s1.textContent=`NOTES DE FRAIS/photo ticket seb2026/${week}`;
+  if(s2) s2.textContent=`2026- Sébastien ESNAULT.xlsx → ${tab}`;
+}
+function dbg(msg){
+  const box=document.getElementById('debugBox');
+  if(!box) return;
+  box.style.display='block';
+  box.innerHTML+=msg+'<br>';
+  box.scrollTop=box.scrollHeight;
+  const btn=document.getElementById('copyDebugBtn');
+  if(btn) btn.style.display='block';
+  console.log(msg);
+}
+function copyDebug(){
+  const box=document.getElementById('debugBox');
+  const text=box.innerText;
+  navigator.clipboard.writeText(text).then(()=>showToast('✓ Log copié !'));
+}
+
+// =============================================
+// AUTH PKCE
+// =============================================
+function genVerifier(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+async function genChallenge(v){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v));return btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
+
+async function startLogin(){
+  const v=genVerifier(), c=await genChallenge(v);
+  sessionStorage.setItem('pkce_v',v);
+  const p=new URLSearchParams({client_id:CLIENT_ID,response_type:'code',redirect_uri:REDIRECT_URI,scope:SCOPES,code_challenge:c,code_challenge_method:'S256',response_mode:'fragment',prompt:'select_account'});
+  window.location.href=`${AUTHORITY}/oauth2/v2.0/authorize?${p}`;
+}
+
+async function handleCallback(){
+  const h=window.location.hash.substring(1);
+  const p=new URLSearchParams(h);
+  const code=p.get('code');
+  if(!code) return false;
+  const v=sessionStorage.getItem('pkce_v');
+  if(!v) return false;
+  try{
+    const r=await fetch(`${AUTHORITY}/oauth2/v2.0/token`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:CLIENT_ID,grant_type:'authorization_code',code,redirect_uri:REDIRECT_URI,code_verifier:v})});
+    const d=await r.json();
+    if(d.access_token){
+      accessToken=d.access_token;
+      localStorage.setItem('fp_token',accessToken);
+      if(d.refresh_token) localStorage.setItem('fp_refresh',d.refresh_token);
+      window.history.replaceState({},'',window.location.pathname);
+      sessionStorage.removeItem('pkce_v');
+      await loadUser();
+      return true;
+    }
+  }catch(e){console.error(e);}
+  return false;
+}
+
+async function doRefresh(){
+  const rt=localStorage.getItem('fp_refresh');
+  if(!rt) return false;
+  try{
+    const r=await fetch(`${AUTHORITY}/oauth2/v2.0/token`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:CLIENT_ID,grant_type:'refresh_token',refresh_token:rt,scope:SCOPES})});
+    const d=await r.json();
+    if(d.access_token){accessToken=d.access_token;localStorage.setItem('fp_token',accessToken);if(d.refresh_token) localStorage.setItem('fp_refresh',d.refresh_token);return true;}
+  }catch(e){}
+  return false;
+}
+
+async function loadUser(){
+  const r=await graphGet('/me');
+  currentUser=r;
+  await initSharePoint();
+  updateUILoggedIn();
+}
+
+function updateUILoggedIn(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('navBar').style.display='flex';
+  document.getElementById('screen-scan').classList.add('active');
+  document.getElementById('headerRight').innerHTML=`<div style="font-size:11px;text-align:right;color:white;">${currentUser?.displayName||''}<br><small>✓ Connecté</small></div>`;
+  updateInfoDisplay();
+}
+
+// =============================================
+// SHAREPOINT — initialisation IDs
+// =============================================
+async function initSharePoint(){
+  try{
+    // Récupérer le siteId
+    const site=await graphGet(`/sites/${SP_HOSTNAME}:${SP_SITE_PATH}`);
+    siteId=site.id;
+    dbg('✓ Site ID: '+siteId);
+    // Récupérer le driveId (Documents)
+    const drives=await graphGet(`/sites/${siteId}/drives`);
+    const docDrive=drives.value.find(d=>d.name==='Documents')||drives.value[0];
+    driveId=docDrive.id;
+    dbg('✓ Drive ID: '+driveId);
+  }catch(e){
+    dbg('⚠ initSharePoint error: '+e.message);
+  }
+}
+
+// =============================================
+// GRAPH API
+// =============================================
+async function graphGet(path){
+  const r=await fetch(`https://graph.microsoft.com/v1.0${path}`,{headers:{Authorization:`Bearer ${accessToken}`}});
+  if(r.status===401){const ok=await doRefresh();if(ok) return graphGet(path);throw new Error('Auth expired');}
+  if(!r.ok){const t=await r.text();throw new Error(`${r.status}: ${t}`);}
+  return r.json();
+}
+async function graphPut(path,body,ct='application/octet-stream'){
+  const r=await fetch(`https://graph.microsoft.com/v1.0${path}`,{method:'PUT',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':ct},body});
+  if(r.status===401){await doRefresh();return graphPut(path,body,ct);}
+  if(!r.ok){const t=await r.text();throw new Error(`PUT ${r.status}: ${t}`);}
+  return r.json();
+}
+async function graphPatch(path,data){
+  const r=await fetch(`https://graph.microsoft.com/v1.0${path}`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(r.status===401){await doRefresh();return graphPatch(path,data);}
+  if(!r.ok){const t=await r.text();throw new Error(`PATCH ${r.status}: ${t}`);}
+  return r.json();
+}
+
+// =============================================
+// UPLOAD PHOTO → SHAREPOINT
+// =============================================
+async function uploadPhoto(file){
+  if(!driveId) throw new Error('Drive non initialisé');
+  const week=getWeekNumber();
+  const d=new Date();
+  const jour=String(d.getDate()).padStart(2,'0');
+  const mois=String(d.getMonth()+1).padStart(2,'0');
+  const annee=d.getFullYear();
+  const cat=document.getElementById('f-cat').value;
+  const fileName=`${jour} ${mois} ${annee} ${cat}.jpg`;
+  const folderPath=`${SP_DOC_PATH}/${PHOTO_SUBFOLDER}/${week}`;
+  const fullPath=`${folderPath}/${fileName}`;
+  dbg(`📤 Upload: ${fullPath}`);
+
+  // Créer le dossier semaine s'il n'existe pas
+  try{
+    await graphGet(`/drives/${driveId}/root:/${folderPath}`);
+    dbg('✓ Dossier existe');
+  }catch(e){
+    dbg('📁 Création dossier semaine...');
+    try{
+      // Créer dossier photo ticket seb2026 d'abord si besoin
+      const parentPath=`${SP_DOC_PATH}/${PHOTO_SUBFOLDER}`;
+      await graphGet(`/drives/${driveId}/root:/${parentPath}`);
+    }catch(e2){
+      dbg('⚠ Dossier parent introuvable: '+e2.message);
+    }
+    // Créer sous-dossier semaine
+    const parentId=await getDriveItemId(`${SP_DOC_PATH}/${PHOTO_SUBFOLDER}`);
+    await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${parentId}/children`,{
+      method:'POST',
+      headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},
+      body:JSON.stringify({name:week,folder:{},['@microsoft.graph.conflictBehavior']:'rename'})
+    });
+    dbg('✓ Dossier créé: '+week);
+  }
+
+  const encodedPath=fullPath.split('/').map(s=>encodeURIComponent(s)).join('/');
+  const result=await graphPut(`/drives/${driveId}/root:/${encodedPath}:/content`,file,file.type||'image/jpeg');
+  dbg('✓ Photo uploadée: '+result.webUrl);
+  return result.webUrl;
+}
+
+async function getDriveItemId(path){
+  const item=await graphGet(`/drives/${driveId}/root:/${encodeURIComponent(path).replace(/%2F/g,'/').replace(/%20/g,' ')}`);
+  return item.id;
+}
+
+// =============================================
+// TROUVER L'ITEM EXCEL PAR SON ID SHAREPOINT
+// =============================================
+async function getExcelDriveItemId(){
+  // Chercher via siteId + guid du document
+  try{
+    const drives=await graphGet(`/sites/${siteId}/drives`);
+    for(const drive of drives.value){
+      try{
+        const item=await graphGet(`/drives/${drive.id}/items?$filter=id eq '${EXCEL_ITEM_ID}'`);
+        if(item.value&&item.value.length>0) return item.value[0].id;
+      }catch(e){}
+    }
+  }catch(e){ dbg('⚠ search by ID failed: '+e.message); }
+  // Fallback: chercher par chemin
+  const encoded=`${SP_DOC_PATH}/${EXCEL_NAME}`.split('/').map(s=>encodeURIComponent(s)).join('/');
+  const item=await graphGet(`/drives/${driveId}/root:/${encoded}`);
+  return item.id;
+}
+
+// =============================================
+// ÉCRITURE EXCEL SHAREPOINT via sessions
+// =============================================
+async function writeToExcel(cat,ttc,tva,ht){
+  if(!siteId) throw new Error('Site non initialisé');
+  dbg('📊 Accès Excel via ID direct...');
+
+  const fileId = await getExcelDriveItemId();
+  dbg('✓ Excel Drive Item ID: '+fileId);
+
+  const sheetName=getMonthTab();
+  dbg('📋 Onglet: '+sheetName);
+
+  // Créer une session Excel (nécessaire pour SharePoint)
+  dbg('🔑 Création session Excel...');
+  let sessionId = null;
+  try {
+    const sessionResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/createSession`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persistChanges: true })
+    });
+    if (sessionResp.ok) {
+      const sessionData = await sessionResp.json();
+      sessionId = sessionData.id;
+      dbg('✓ Session: '+sessionId.substring(0,20)+'...');
+    } else {
+      dbg('⚠ Session failed, essai sans session...');
+    }
+  } catch(e) { dbg('⚠ Session error: '+e.message); }
+
+  const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' };
+  if (sessionId) headers['workbook-session-id'] = sessionId;
+
+  // Trouver première ligne vide à partir de C15
+  const rangeResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='C15:C60')`, { headers });
+  if (!rangeResp.ok) { const t=await rangeResp.text(); throw new Error(`Range ${rangeResp.status}: ${t}`); }
+  const range = await rangeResp.json();
+  const vals=range.values||[];
+  let firstEmpty=15;
+  for(let i=0;i<vals.length;i++){
+    if(vals[i][0]!==null&&vals[i][0]!==''&&vals[i][0]!==undefined) firstEmpty=15+i+1;
+  }
+  dbg(`📝 Première ligne vide: ${firstEmpty}`);
+
+  // Construire la ligne (C à O = 13 colonnes)
+  const row=new Array(13).fill(null);
+  if(cat==='hotel'){row[2]=ttc;row[12]=ttc;}
+  else if(cat==='carburant'){row[3]=ht;row[4]=tva;row[5]=ttc;row[12]=ttc;}
+  else if(cat==='repas'){row[6]=ht;row[7]=tva;row[8]=ttc;row[12]=ttc;}
+  else if(cat==='divers'){row[9]=ht;row[10]=tva;row[11]=ttc;row[12]=ttc;}
+
+  const addr=`C${firstEmpty}:O${firstEmpty}`;
+  dbg(`✏️ Écriture en ${addr}`);
+
+  const patchResp = await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/worksheets('${sheetName}')/range(address='${addr}')`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({values:[row]})
+  });
+  if (!patchResp.ok) { const t=await patchResp.text(); throw new Error(`Patch ${patchResp.status}: ${t}`); }
+
+  // Fermer la session
+  if (sessionId) {
+    try {
+      await fetch(`https://graph.microsoft.com/v1.0/drives/${driveId}/items/${fileId}/workbook/closeSession`, {
+        method: 'POST', headers
+      });
+      dbg('✓ Session fermée');
+    } catch(e) {}
+  }
+
+  dbg('✓ Excel mis à jour !');
+  return firstEmpty;
+}
+
+// =============================================
+// IA EXTRACTION
+// =============================================
+async function extractWithAI(imageFile){
+  try{
+    const b64=await fileToB64(imageFile);
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:imageFile.type||'image/jpeg',data:b64}},
+          {type:'text',text:'Analyse cette facture. Réponds UNIQUEMENT avec JSON: {"ttc":nombre,"tva":nombre,"category":"carburant"|"repas"|"hotel"|"divers"}. tva=0 si absent.'}
+        ]}]
+      })
+    });
+    const d=await r.json();
+    return JSON.parse((d.content?.[0]?.text||'').replace(/```json|```/g,'').trim());
+  }catch(e){return null;}
+}
+function fileToB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});}
+
+// =============================================
+// HANDLERS
+// =============================================
+async function handleFile(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  currentFile=file;
+  document.getElementById('previewImg').src=URL.createObjectURL(file);
+  document.getElementById('previewImg').style.display='block';
+  document.getElementById('uploadZone').style.display='none';
+  document.getElementById('extractForm').style.display='block';
+  document.getElementById('debugBox').innerHTML='';
+  updateInfoDisplay();updateCatInfo();
+
+  const badge=document.getElementById('aiBadge');
+  badge.className='ai-badge ai-loading';
+  badge.innerHTML='<span class="spin"></span> Analyse...';
+
+  const result=await extractWithAI(file);
+  if(result){
+    if(result.ttc) document.getElementById('f-ttc').value=parseFloat(result.ttc).toFixed(2);
+    if(result.tva) document.getElementById('f-tva').value=parseFloat(result.tva).toFixed(2);
+    if(result.category){
+      const sel=document.getElementById('f-cat');
+      for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===result.category){sel.selectedIndex=i;break;}}
+    }
+    calcHT();updateCatInfo();
+    badge.className='ai-badge ai-done';badge.innerHTML='✓ Extraction réussie';
+  }else{
+    badge.className='ai-badge ai-error';badge.innerHTML='⚠ Remplissez manuellement';
+  }
+}
+
+async function submitExpense(){
+  if(!accessToken){showToast('⚠ Connectez-vous d\'abord');return;}
+  const cat=document.getElementById('f-cat').value;
+  const ttc=parseFloat(document.getElementById('f-ttc').value)||0;
+  const tva=parseFloat(document.getElementById('f-tva').value)||0;
+  const ht=parseFloat(document.getElementById('f-ht').value)||(ttc-tva);
+  if(!ttc){showToast('⚠ Entrez le montant TTC');return;}
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;
+  document.getElementById('debugBox').innerHTML='';
+  const expense={id:Date.now(),cat,ttc,tva,ht,status:'pending',date:new Date().toISOString()};
+
+  // Si siteId/driveId pas encore chargés, réessayer
+  if(!siteId||!driveId){
+    dbg('🔄 Initialisation SharePoint...');
+    await initSharePoint();
+  }
+
+  try{
+    // ÉTAPE 1 — Upload photo
+    setStep(1,'active');
+    btn.innerHTML='<span class="spin"></span> Upload photo...';
+    let photoUrl='';
+    try{
+      photoUrl=await uploadPhoto(currentFile);
+      setStep(1,'done');
+    }catch(e){
+      setStep(1,'err');
+      dbg('❌ Upload error: '+e.message);
+      showToast('⚠ Erreur upload: '+e.message.substring(0,60));
+    }
+
+    // ÉTAPE 2 — Excel
+    setStep(2,'active');
+    btn.innerHTML='<span class="spin"></span> Mise à jour Excel...';
+    try{
+      const row=await writeToExcel(cat,ttc,tva,ht);
+      setStep(2,'done');
+      expense.status='synced';expense.row=row;
+      showToast(`✓ Ligne ${row} ajoutée dans ${getMonthTab()}`);
+    }catch(e){
+      setStep(2,'err');
+      expense.status='error';
+      dbg('❌ Excel error: '+e.message);
+      showToast('⚠ Erreur Excel: '+e.message.substring(0,60));
+    }
+
+    expenses.push(expense);
+    localStorage.setItem('fp_expenses',JSON.stringify(expenses));
+    btn.innerHTML='✓ Terminé !';
+    btn.style.background='var(--green)';
+    setTimeout(resetForm,2500);
+  }catch(e){
+    btn.disabled=false;
+    btn.style.background='';
+    btn.innerHTML='Enregistrer et synchroniser';
+    showToast('Erreur: '+e.message.substring(0,60));
+  }
+}
+
+function setStep(n,state){
+  const dot=document.getElementById('dot'+n);
+  const icons={active:'<span class="spin"></span>',done:'✓',err:'!'};
+  dot.className='step-icon step-'+state;
+  dot.innerHTML=icons[state]||n;
+}
+
+async function openExcel(){
+  if(!accessToken||!driveId){showToast('⚠ Connectez-vous d\'abord');return;}
+  try{
+    const p=encodeURIComponent(`${SP_DOC_PATH}/${EXCEL_NAME}`).replace(/%2F/g,'/').replace(/%20/g,' ');
+    const item=await graphGet(`/drives/${driveId}/root:/${p}`);
+    if(item.webUrl) window.open(item.webUrl,'_blank');
+  }catch(e){showToast('Fichier introuvable: '+e.message);}
+}
+
+function resetForm(){
+  currentFile=null;
+  document.getElementById('previewImg').style.display='none';
+  document.getElementById('uploadZone').style.display='block';
+  document.getElementById('extractForm').style.display='none';
+  document.getElementById('fileInput').value='';
+  document.getElementById('debugBox').innerHTML='';
+  document.getElementById('debugBox').style.display='none';
+  document.getElementById('copyDebugBtn').style.display='none';
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=false;btn.style.background='';
+  btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg> Enregistrer et synchroniser';
+  [1,2].forEach(n=>{const d=document.getElementById('dot'+n);d.className='step-icon step-todo';d.textContent=n;});
+}
+
+function showScreen(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='history') renderHistory();
+  if(id==='stats') renderStats();
+}
+
+function renderHistory(){
+  const list=document.getElementById('expenseList');
+  const icons={carburant:'⛽',repas:'🍽️',hotel:'🏨',divers:'📎'};
+  if(!expenses.length){list.innerHTML='<p style="text-align:center;color:var(--text-muted);font-size:14px;padding:20px 0;">Aucune note</p>';document.getElementById('histTotal').textContent='0 €';return;}
+  const total=expenses.reduce((a,e)=>a+e.ttc,0);
+  document.getElementById('histTotal').textContent=total.toFixed(2)+' €';
+  list.innerHTML=[...expenses].reverse().map(e=>`
+    <div class="expense-item">
+      <div class="exp-icon">${icons[e.cat]||'📎'}</div>
+      <div class="exp-info"><p>${e.cat.charAt(0).toUpperCase()+e.cat.slice(1)}</p><span>${new Date(e.date).toLocaleDateString('fr-FR')}${e.row?' · Ligne '+e.row:''}</span></div>
+      <div class="exp-right"><div class="exp-amount">${e.ttc.toFixed(2)} €</div><div class="exp-status ${e.status==='synced'?'status-ok':e.status==='error'?'status-error':'status-pending'}">${e.status==='synced'?'Sync.':e.status==='error'?'Erreur':'Attente'}</div></div>
+    </div>`).join('');
+}
+
+function renderStats(){
+  const now=new Date();
+  const months=['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  document.getElementById('st-month').textContent=months[now.getMonth()]+' '+now.getFullYear();
+  const total=expenses.reduce((a,e)=>a+e.ttc,0);
+  document.getElementById('st-total').textContent=total.toFixed(2)+' €';
+  document.getElementById('st-count').textContent=expenses.length;
+  document.getElementById('st-synced').textContent=expenses.filter(e=>e.status==='synced').length;
+  document.getElementById('st-pending').textContent=expenses.filter(e=>e.status!=='synced').length;
+  const cats={};expenses.forEach(e=>{cats[e.cat]=(cats[e.cat]||0)+e.ttc;});
+  const max=Math.max(...Object.values(cats),1);
+  const bars=document.getElementById('catBars');
+  if(!Object.keys(cats).length){bars.innerHTML='<p style="font-size:13px;color:var(--text-muted);">Aucune donnée</p>';return;}
+  const labels={carburant:'⛽ Carburant',repas:'🍽️ Repas',hotel:'🏨 Hôtel',divers:'📎 Divers'};
+  bars.innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,amt])=>`
+    <div class="bar-row"><div class="bar-label"><span>${labels[cat]||cat}</span><span style="font-weight:700;">${amt.toFixed(2)} €</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(amt/max*100)}%"></div></div></div>`).join('');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// =============================================
+// INIT
+// =============================================
+async function init(){
+  if(window.location.hash.includes('code=')){
+    const ok=await handleCallback();
+    if(ok){showScreen('scan');return;}
+  }
+  const cached=localStorage.getItem('fp_token');
+  if(cached){
+    accessToken=cached;
+    try{await loadUser();showScreen('scan');return;}
+    catch(e){
+      const ok=await doRefresh();
+      if(ok){await loadUser();showScreen('scan');return;}
+      localStorage.removeItem('fp_token');localStorage.removeItem('fp_refresh');
+    }
+  }
+  document.getElementById('loginScreen').style.display='flex';
+}
+init();
+</script>
+</body>
+</html>
